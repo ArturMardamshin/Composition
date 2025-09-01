@@ -8,22 +8,20 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
 import com.mardamshin.composition.R
 import com.mardamshin.composition.databinding.FragmentGameFinishedBinding
 import com.mardamshin.composition.domain.entity.GameResult
 
 class GameFinishedFragment : Fragment() {
 
-    private lateinit var gameResult: GameResult
+    private val args by navArgs<GameFinishedFragmentArgs>()
 
     private var _binding: FragmentGameFinishedBinding? = null
     private val binding: FragmentGameFinishedBinding
         get() = _binding ?: throw RuntimeException("FragmentGameFinishedBinding == null")
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        parseArgs()
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -35,16 +33,14 @@ class GameFinishedFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val callback = object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                retryGame()
-            }
-        }
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, callback)
+        setupClickListeners()
+        bindViews()
+    }
+
+    private fun setupClickListeners() {
         binding.buttonRetry.setOnClickListener {
             retryGame()
         }
-        bindViews()
     }
 
     @SuppressLint("StringFormatMatches")
@@ -53,15 +49,15 @@ class GameFinishedFragment : Fragment() {
             emojiResult.setImageResource(getSmileResId())
             tvScoreAnswers.text = String.format(
                 getString( R.string.score_answers),
-                gameResult.countOfRightAnswers
+                args.gameResult.countOfRightAnswers
             )
             tvRequiredAnswers.text = String.format(
                 getString( R.string.required_score),
-                gameResult.gameSettings.minCountOfRightAnswers.toString()
+                args.gameResult.gameSettings.minCountOfRightAnswers.toString()
             )
             tvRequiredPercentage.text = String.format(
                 getString( R.string.required_percentage),
-                gameResult.gameSettings.minPercentOfRightAnswers.toString()
+                args.gameResult.gameSettings.minPercentOfRightAnswers.toString()
             )
             tvScorePercentage.text = String.format(
                 getString(R.string.score_percentage),
@@ -72,14 +68,14 @@ class GameFinishedFragment : Fragment() {
 
 
     private fun getSmileResId(): Int {
-        return if (gameResult.winner) {
+        return if (args.gameResult.winner) {
             R.drawable.ic_smile
         } else {
             R.drawable.ic_sad
         }
     }
 
-    private fun getPercentOfRightAnswers() = with(gameResult) {
+    private fun getPercentOfRightAnswers() = with(args.gameResult) {
         if (countOfQuestions == 0) {
             0
         }
@@ -91,30 +87,8 @@ class GameFinishedFragment : Fragment() {
         _binding = null
     }
 
-    private fun parseArgs() {
-        requireArguments().getParcelable<GameResult>(KEY_RESULT)?.let {
-            gameResult = it
-        }
-    }
-
     private fun retryGame() {
-        requireActivity().supportFragmentManager.popBackStack(
-            GameFragment.NAME,
-            FragmentManager.POP_BACK_STACK_INCLUSIVE
-        )
-    }
-
-    companion object {
-
-        private const val KEY_RESULT = "result"
-
-        fun newInstance(gameResult: GameResult): GameFinishedFragment {
-            return GameFinishedFragment().apply {
-                arguments = Bundle().apply {
-                    putParcelable(KEY_RESULT, gameResult)
-                }
-            }
-        }
+        findNavController().popBackStack()
     }
 
 }
